@@ -1,4 +1,4 @@
-package com.example.myapplication;
+package com.yol.myapplication;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -17,6 +17,13 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Map;
+import java.util.HashMap;
+
+
 public class MainActivity extends AppCompatActivity {
 
     Button login = null;
@@ -32,55 +39,66 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void init(){
-        login = (Button) findViewById(R.id.btn_login);
-        create = (Button) findViewById(R.id.btn_registerPage);
-        register = (Button) findViewById(R.id.btn_register);
-        username = (EditText) findViewById(R.id.text_usernameReg);
-        password = (EditText) findViewById(R.id.text_passwordReg);
+        login = (Button) findViewById(R.id.loginBtn);
+        register = (Button) findViewById(R.id.registerBtn);
+        username = (EditText) findViewById(R.id.username);
+        password = (EditText) findViewById(R.id.password);
         login.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 //                Toast.makeText(getApplicationContext(), username.getText(), Toast.LENGTH_LONG).show();
-                volley();
+                volley("login");
             }
         });
-
-        create.setOnClickListener(new View.OnClickListener() {
+        register.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(getApplicationContext(), Register.class);
-                startActivity(intent);
+                volley("register");
             }
         });
-    }
-    
-    public void volley(){
-        final TextView textView = (TextView) findViewById(R.id.resText);
 
-        // Instantiate the RequestQueue.
+    }
+
+    public void volley(String method){
+        final String api_request = method;
         RequestQueue queue = Volley.newRequestQueue(this);
-        String url ="http://172.16.11.22:4000/api/login/"+username.getText().toString()+"/"+password.getText().toString();
-        Toast.makeText(getApplicationContext(), username.getText(), Toast.LENGTH_LONG).show();
-        // Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+        String url = String.format("http://172.16.11.8:3000/api/%s",api_request);
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        // Display the first 500 characters of the response string.
-                        textView.setText("Response is: "+ response);
-
-
+                        try {
+                            JSONObject jsonObject = new JSONObject(response);
+                            if ((boolean) jsonObject.get("auth")){
+                                Intent launchactivity= new Intent(MainActivity.this, Information.class);
+                        startActivity(launchactivity);
+                            }else{
+                                Toast.makeText(getApplicationContext(), "Account not found!", Toast.LENGTH_LONG).show();
+                            }
+                        }catch (JSONException err){
+                            System.out.println(err);
+                        }
                     }
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                textView.setText("That didn't work!");
-            }
-        });
+                System.out.println(error);
+                Toast.makeText(getApplicationContext(), api_request+" Error!", Toast.LENGTH_LONG).show();
 
-        // Add the request to the RequestQueue.
+            }
+        })
+            {
+                @Override
+                protected Map<String, String> getParams()
+                {
+                    Map<String, String>  params = new HashMap<String, String>();
+                    params.put("username",username.getText().toString() );
+                    params.put("password",password.getText().toString() );
+                    return params;
+                }
+            };
+
         queue.add(stringRequest);
-        
     }
 
 
